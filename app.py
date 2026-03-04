@@ -30,6 +30,15 @@ if uploaded_file is not None:
     st.sidebar.header("Data Configuration")
     target_col = st.sidebar.selectbox("🎯 Select Target Column (To Predict)", df.columns)
     
+    # Tự động đánh giá cột dữ liệu (Dynamic Validation)
+    # Nếu là cột số và có quá 20 giá trị khác nhau -> Khả năng cao là dữ liệu liên tục (Continuous)
+    is_continuous = pd.api.types.is_numeric_dtype(df[target_col]) and df[target_col].nunique() > 20
+    
+    if is_continuous:
+        st.sidebar.error(f"⚠️ '{target_col}' has {df[target_col].nunique()} unique numeric values. Classification accuracy will likely be 0%. Please select a categorical column.")
+    else:
+        st.sidebar.success(f"✅ '{target_col}' is suitable for classification models.")
+    
     numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
     
     if df[target_col].dtype == 'object':
@@ -60,11 +69,49 @@ if uploaded_file is not None:
     with col_viz:
         st.subheader("📈 Dynamic Visualization")
         if len(numeric_cols) >= 2:
-            col_x = st.selectbox("Select X-axis", numeric_cols, index=0)
-            col_y = st.selectbox("Select Y-axis", numeric_cols, index=1 if len(numeric_cols) > 1 else 0)
+            
+            # --- MODIFIED: REVERSED AUTO-FORMATTER ---
+            # This function formats column names to be user-friendly first
+            def format_column_name(col):
+                words = str(col).split('_') # Split by underscore
+                
+                # Smart unit handling for display
+                # We capitalize units like MM, G, USD for professional look
+                units = {
+                    'mm': 'In MM', 
+                    'cm': 'In CM', 
+                    'm': 'In M', 
+                    'g': 'In G', 
+                    'kg': 'In KG', 
+                    'usd': 'In USD',
+                    'id': '(Raw ID)' # Special handling for common ID columns
+                }
+                
+                # Check if last word is a unit, if so, format it nicely
+                if words[-1].lower() in units:
+                    words[-1] = units[words[-1].lower()]
+                
+                # Join and Capitalize for the readable part
+                readable = " ".join(words).capitalize()
+                
+                # Return reversed format: "Readable Name - (raw_name)"
+                # Parentheses provide visual separation to deemphasize raw name.
+                return f"{readable} - ({col})"
+
+            # Apply format_func to selectboxes
+            col_x = st.selectbox("Select X-axis", numeric_cols, index=0, format_func=format_column_name)
+            col_y = st.selectbox("Select Y-axis", numeric_cols, index=1 if len(numeric_cols) > 1 else 0, format_func=format_column_name)
             
             fig, ax = plt.subplots()
             sns.scatterplot(data=df, x=col_x, y=col_y, hue=target_col, palette="viridis", ax=ax)
+            
+            # --- DYNAMIC AXIS FIX (Kept from previous version) ---
+            if df[col_x].nunique() <= 10:
+                ax.set_xticks(sorted(df[col_x].unique()))
+                
+            if df[col_y].nunique() <= 10:
+                ax.set_yticks(sorted(df[col_y].unique()))
+            
             st.pyplot(fig)
         else:
             st.warning("Not enough numeric columns for scatter plot.")
