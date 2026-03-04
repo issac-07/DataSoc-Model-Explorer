@@ -152,13 +152,13 @@ if uploaded_file is not None:
         with col_chart_right:
             if model_name == "Random Forest":
                 importance_df = pd.DataFrame({'Feature': feature_cols, 'Importance': clf.feature_importances_}).sort_values(by='Importance', ascending=False)
-                fig_imp, ax_imp = plt.subplots(figsize=(4.9, 3.5)) 
+                fig_imp, ax_imp = plt.subplots(figsize=(5, 3.5)) 
                 sns.barplot(data=importance_df, x='Importance', y='Feature', ax=ax_imp, palette="mako")
                 st.pyplot(fig_imp)
                 
             elif model_name == "Logistic Regression":
                 importance_df = pd.DataFrame({'Feature': feature_cols, 'Importance': np.abs(clf.coef_[0])}).sort_values(by='Importance', ascending=False)
-                fig_imp, ax_imp = plt.subplots(figsize=(4.9, 3.5)) 
+                fig_imp, ax_imp = plt.subplots(figsize=(5, 3.5)) 
                 sns.barplot(data=importance_df, x='Importance', y='Feature', ax=ax_imp, palette="rocket")
                 st.pyplot(fig_imp)
                 
