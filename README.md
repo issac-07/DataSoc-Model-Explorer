@@ -17,6 +17,3 @@ An interactive web application built to visualize Machine Learning models and da
 1. Clone the repository.
 2. Install dependencies: `pip install -r requirements.txt`
 3. Launch the app: `streamlit run app.py`
-
-## 💡 Purpose
-This project was developed in 48 hours to demonstrate technical agility, interest in **full-stack development**, and the ability to bridge the gap between complex data models and student-facing tools.
