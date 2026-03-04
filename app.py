@@ -47,20 +47,27 @@ if uploaded_file is not None:
         param = st.sidebar.slider("Number of neighbors (K)", 1, 15, 3)
         clf = KNeighborsClassifier(n_neighbors=param)
 
-    # --- TRANG CHÍNH: KHÁM PHÁ DỮ LIỆU ---
-    st.subheader(f"📊 Dataset Preview: {uploaded_file.name}")
-    st.dataframe(df.head())
+    # --- TRANG CHÍNH: KHÁM PHÁ DỮ LIỆU & TRỰC QUAN HÓA ---
+    # Sử dụng columns để đặt bảng và biểu đồ nằm ngang hàng
+    # Tỉ lệ [1, 2] giúp bảng chiếm 1/3 và biểu đồ chiếm 2/3 chiều rộng
+    col_data, col_viz = st.columns([4, 5]) 
 
-    st.subheader("📈 Dynamic Visualization")
-    if len(numeric_cols) >= 2:
-        col_x = st.selectbox("Select X-axis", numeric_cols, index=0)
-        col_y = st.selectbox("Select Y-axis", numeric_cols, index=1 if len(numeric_cols) > 1 else 0)
-        
-        fig, ax = plt.subplots()
-        sns.scatterplot(data=df, x=col_x, y=col_y, hue=target_col, palette="viridis", ax=ax)
-        st.pyplot(fig)
-    else:
-        st.warning("Not enough numeric columns for scatter plot.")
+    with col_data:
+        st.subheader("📊 Dataset Preview")
+        # Thêm tham số height để giới hạn chiều cao bảng
+        st.dataframe(df.head(15), height=500, use_container_width=True)
+
+    with col_viz:
+        st.subheader("📈 Dynamic Visualization")
+        if len(numeric_cols) >= 2:
+            col_x = st.selectbox("Select X-axis", numeric_cols, index=0)
+            col_y = st.selectbox("Select Y-axis", numeric_cols, index=1 if len(numeric_cols) > 1 else 0)
+            
+            fig, ax = plt.subplots()
+            sns.scatterplot(data=df, x=col_x, y=col_y, hue=target_col, palette="viridis", ax=ax)
+            st.pyplot(fig)
+        else:
+            st.warning("Not enough numeric columns for scatter plot.")
 
     # --- HUẤN LUYỆN MÔ HÌNH ---
     st.divider()
