@@ -7,6 +7,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import LabelEncoder
+from sklearn.linear_model import LogisticRegression
+import numpy as np # Thêm numpy để xử lý số liệu tuyệt đối
 import pickle # Library used to save and load models
 
 st.set_page_config(page_title="DataSoc | Model Automator", layout="wide")
@@ -47,14 +49,22 @@ if uploaded_file is not None:
 
     # --- MODEL CONFIGURATION ---
     st.sidebar.header("Model Configuration")
-    model_name = st.sidebar.selectbox("Select Algorithm", ["Random Forest", "KNN"])
+    model_name = st.sidebar.selectbox("Select Algorithm", ["Random Forest", "KNN", "Logistic Regression"])
 
     if model_name == "Random Forest":
         param = st.sidebar.slider("Number of estimators", 1, 100, 50)
         clf = RandomForestClassifier(n_estimators=param, random_state=42)
-    else:
+    elif model_name == "KNN":
         param = st.sidebar.slider("Number of neighbors (K)", 1, 15, 3)
         clf = KNeighborsClassifier(n_neighbors=param)
+    else: # Cho Logistic Regression
+        # Sử dụng select_slider để trải rộng các giá trị từ cực nhỏ (underfit) đến lớn
+        param = st.sidebar.select_slider(
+            "Regularization strength (C)", 
+            options=[0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0], 
+            value=1.0
+        )
+        clf = LogisticRegression(C=param, max_iter=2000, random_state=42)
 
     # --- MAIN PAGE: DATA EXPLORATION & VISUALIZATION ---
     # Use columns to align the data table and chart side-by-side
@@ -63,8 +73,20 @@ if uploaded_file is not None:
 
     with col_data:
         st.subheader("📊 Dataset Preview")
-        # Use height parameter to restrict table height
-        st.dataframe(df.head(15), height=500, use_container_width=True)
+        
+        # --- UX HACK: SCROLLBAR PADDING ---
+        # 1. Tạo bản sao 15 dòng đầu để không ảnh hưởng đến dữ liệu gốc dùng để train model
+        preview_df = df.head(15).copy()
+        
+        # 2. Chuyển toàn bộ dữ liệu ở bảng preview sang dạng chữ (string)
+        preview_df = preview_df.astype(str)
+        
+        # 3. Chèn một dòng hoàn toàn trống ở cuối cùng làm "đệm" (Padding)
+        # Sử dụng khoảng trắng ' ' làm index để không bị lỗi hiển thị
+        preview_df.loc[' '] = '' 
+        
+        # Hiển thị bảng. Thanh cuộn ngang giờ sẽ đè lên dòng trống này!
+        st.dataframe(preview_df, height=500, use_container_width=True)
 
     with col_viz:
         st.subheader("📈 Dynamic Visualization")
@@ -143,7 +165,6 @@ if uploaded_file is not None:
         with col_feat:
             st.subheader("🔍 Feature Importance")
             if model_name == "Random Forest":
-                # Get the importance of each feature and plot a bar chart
                 importance_df = pd.DataFrame({
                     'Feature': feature_cols,
                     'Importance': clf.feature_importances_
@@ -152,6 +173,18 @@ if uploaded_file is not None:
                 fig_imp, ax_imp = plt.subplots()
                 sns.barplot(data=importance_df, x='Importance', y='Feature', ax=ax_imp, palette="mako")
                 st.pyplot(fig_imp)
+                
+            elif model_name == "Logistic Regression":
+                # Logistic Regression dùng hệ số (coefficients) để đánh giá độ quan trọng
+                importance_df = pd.DataFrame({
+                    'Feature': feature_cols,
+                    'Importance': np.abs(clf.coef_[0]) # Dùng trị tuyệt đối vì hệ số có thể âm
+                }).sort_values(by='Importance', ascending=False)
+                
+                fig_imp, ax_imp = plt.subplots()
+                sns.barplot(data=importance_df, x='Importance', y='Feature', ax=ax_imp, palette="rocket")
+                st.pyplot(fig_imp)
+                
             else:
                 st.info("💡 The KNN algorithm does not support Feature Importance calculation.")
                 
