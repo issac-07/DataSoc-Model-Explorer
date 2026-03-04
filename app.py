@@ -7,7 +7,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import LabelEncoder
-import pickle # Thư viện dùng để lưu và tải mô hình
+import pickle # Library used to save and load models
 
 st.set_page_config(page_title="DataSoc | Model Automator", layout="wide")
 
@@ -17,7 +17,7 @@ Upload any CSV dataset to dynamically train, evaluate, and export Machine Learni
 This is a real-world prototype for the Technology Portfolio's internal tools.
 """)
 
-# --- TẢI DỮ LIỆU LÊN ---
+# --- DATA UPLOAD ---
 uploaded_file = st.sidebar.file_uploader("📂 Upload your dataset (CSV)", type=["csv"])
 
 if uploaded_file is not None:
@@ -26,7 +26,7 @@ if uploaded_file is not None:
 
     st.sidebar.success("Dataset uploaded successfully!")
     
-    # --- CẤU HÌNH DỮ LIỆU ---
+    # --- DATA CONFIGURATION ---
     st.sidebar.header("Data Configuration")
     target_col = st.sidebar.selectbox("🎯 Select Target Column (To Predict)", df.columns)
     
@@ -36,7 +36,7 @@ if uploaded_file is not None:
         le = LabelEncoder()
         df[target_col] = le.fit_transform(df[target_col])
 
-    # --- CẤU HÌNH MÔ HÌNH ---
+    # --- MODEL CONFIGURATION ---
     st.sidebar.header("Model Configuration")
     model_name = st.sidebar.selectbox("Select Algorithm", ["Random Forest", "KNN"])
 
@@ -47,14 +47,14 @@ if uploaded_file is not None:
         param = st.sidebar.slider("Number of neighbors (K)", 1, 15, 3)
         clf = KNeighborsClassifier(n_neighbors=param)
 
-    # --- TRANG CHÍNH: KHÁM PHÁ DỮ LIỆU & TRỰC QUAN HÓA ---
-    # Sử dụng columns để đặt bảng và biểu đồ nằm ngang hàng
-    # Tỉ lệ [1, 2] giúp bảng chiếm 1/3 và biểu đồ chiếm 2/3 chiều rộng
+    # --- MAIN PAGE: DATA EXPLORATION & VISUALIZATION ---
+    # Use columns to align the data table and chart side-by-side
+    # The [4, 5] ratio allocates width appropriately between the table and chart
     col_data, col_viz = st.columns([4, 5]) 
 
     with col_data:
         st.subheader("📊 Dataset Preview")
-        # Thêm tham số height để giới hạn chiều cao bảng
+        # Use height parameter to restrict table height
         st.dataframe(df.head(15), height=500, use_container_width=True)
 
     with col_viz:
@@ -69,7 +69,7 @@ if uploaded_file is not None:
         else:
             st.warning("Not enough numeric columns for scatter plot.")
 
-    # --- HUẤN LUYỆN MÔ HÌNH ---
+    # --- MODEL TRAINING ---
     st.divider()
     feature_cols = [col for col in numeric_cols if col != target_col]
     
@@ -88,7 +88,7 @@ if uploaded_file is not None:
         st.metric(label="Model Accuracy", value=f"{acc*100:.2f}%")
         
         # ==========================================================
-        # TÍNH NĂNG NÂNG CAO: FEATURE IMPORTANCE & MODEL EXPORT
+        # ADVANCED FEATURES: FEATURE IMPORTANCE & MODEL EXPORT
         # ==========================================================
         st.divider()
         col_feat, col_export = st.columns(2)
@@ -96,7 +96,7 @@ if uploaded_file is not None:
         with col_feat:
             st.subheader("🔍 Feature Importance")
             if model_name == "Random Forest":
-                # Lấy độ quan trọng của từng biến và vẽ biểu đồ
+                # Get the importance of each feature and plot a bar chart
                 importance_df = pd.DataFrame({
                     'Feature': feature_cols,
                     'Importance': clf.feature_importances_
@@ -106,13 +106,13 @@ if uploaded_file is not None:
                 sns.barplot(data=importance_df, x='Importance', y='Feature', ax=ax_imp, palette="mako")
                 st.pyplot(fig_imp)
             else:
-                st.info("💡 Thuật toán KNN không hỗ trợ tính toán Feature Importance.")
+                st.info("💡 The KNN algorithm does not support Feature Importance calculation.")
                 
         with col_export:
             st.subheader("💾 Export Model")
-            st.write("Tải mô hình đã huấn luyện về máy để tích hợp vào các hệ thống khác mà không cần train lại.")
+            st.write("Download the trained model to your local machine for deployment without retraining.")
             
-            # Đóng gói mô hình thành byte
+            # Serialize the model into bytes
             model_bytes = pickle.dumps(clf)
             
             st.download_button(
